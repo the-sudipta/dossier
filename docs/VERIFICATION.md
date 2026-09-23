@@ -6,9 +6,12 @@ The Windows desktop executable and console generator are built locally. The
 compiled app was opened in a native Windows window; its OS folder picker was
 used; generation, rerun, and second-section behavior were checked in the GUI.
 The independent golden-tree verifier, Rust tests, UI integration, responsive
-browser preview, and showcase checks pass. No macOS or Linux binary has been
-built locally. GitHub Actions has not yet built those targets. No release tag,
-public release, or Pages deployment has been performed.
+browser preview, and showcase checks pass. GitHub Actions built and verified
+the Windows, Linux, macOS Intel, and macOS Apple Silicon packages. The public
+[v0.1.0 release](https://github.com/the-sudipta/dossier/releases/tag/v0.1.0)
+contains all eight desktop and standalone CLI assets plus SHA-256 checksums.
+The tagged [release workflow run](https://github.com/the-sudipta/dossier/actions/runs/35907782917)
+completed successfully. No Pages deployment has been performed.
 
 ## Native build blocker
 
@@ -65,6 +68,8 @@ builds the full workspace, and packages both Windows executables.
 | Native GUI section O | 21 folders, 28 files, 2 shared semester files skipped | Native app result panel; exact output tree checked below |
 | Native output contents | 58 files and 43 directories across both sections; file hashes match original assets in each section | `verification/native-desktop.json` |
 | Final Windows package | Dossier desktop 9,800,704 bytes; CLI generator 1,138,688 bytes | `verification/windows-package.log` |
+| Cross-platform release build | Windows, Linux x64, macOS Intel, and macOS Apple Silicon tests and package jobs succeeded | [GitHub Actions run](https://github.com/the-sudipta/dossier/actions/runs/35907782917) |
+| Published release assets | Four desktop packages, four standalone CLI packages, and `SHA256SUMS.txt` | [v0.1.0 release](https://github.com/the-sudipta/dossier/releases/tag/v0.1.0) |
 | GUI command-line flags | `Dossier.exe --help` attaches to the invoking terminal and returns help | `verification/dossier-gui-help.txt` |
 
 The UI integration test uses an explicit test adapter between the production
@@ -94,9 +99,11 @@ the saved variables directly.
 - Desktop runtime is designed to be offline, without localhost or a browser tab.
 - Tauri's OS webview is still a runtime prerequisite; a bare Windows machine
   without WebView2 must have that prerequisite provisioned separately.
-- Linux and both Mac binaries, their native dialogs, clean-machine behavior, and release
-  publishing remain unverified until they can actually run.
-- Cross-platform packaging is prepared, not a claim that all platforms passed.
+- Linux and both Mac binaries were built and packaged in CI, but their native
+  GUI dialogs and clean-machine runtime behavior have not been exercised on
+  those operating systems.
+- The Windows GUI was exercised natively; Linux/macOS GUI runtime behavior is
+  not inferred from successful cross-platform compilation.
 - Destination links/junctions are rejected, but this personal desktop tool is not
   a security boundary against a malicious process concurrently swapping folders.
 - The template ZIP remains the source of truth. File bodies were not parsed or
