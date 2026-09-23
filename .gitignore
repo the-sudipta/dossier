@@ -1,0 +1,10 @@
+/target/
+/src-tauri/target/
+/dist/
+/node_modules/
+/artifacts/
+/verification/output/
+/verification/browser/
+*.log
+!/verification/*.log
+__pycache__/

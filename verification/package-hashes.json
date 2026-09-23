@@ -1,0 +1,12 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "1289D802728BAFB47A3F3620E18BA96C27A0DE5AED8A9B0963CDB2D6A76A1DCC",
+    "Path": "E:\\SUDIPTA\\PERSONAL\\dossier\\dist\\Dossier.exe"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "AE60B3BB7AC6764025D60CB53BF755436DE91D080942668BD18F1D2368F81D67",
+    "Path": "E:\\SUDIPTA\\PERSONAL\\dossier\\dist\\dossier-cli.exe"
+  }
+]

@@ -1,0 +1,3 @@
+Dossier 0.1.0
+Usage: dossier --semester "Fall 25-26" --course "DS Lab" --section G --output <existing-absolute-folder>
+Outputs a JSON summary. Never overwrites or deletes. Exit codes: 0 success, 1 generation error, 2 argument error.

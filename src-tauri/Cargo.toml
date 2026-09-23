@@ -1,0 +1,21 @@
+[package]
+name = "dossier"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Your course. Beautifully in order."
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+dossier-core = { path = ".." }
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_System_Console"] }
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

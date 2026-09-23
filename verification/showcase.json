@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "checks": [
+    "12 categories",
+    "4 prepared platform links",
+    "Three.js initialized online",
+    "Responsive:1280,760,390",
+    "Logo and content remain usable when CDN unavailable"
+  ],
+  "console_errors": []
+}

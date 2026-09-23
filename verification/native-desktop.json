@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "files": 58,
+  "directories": 43,
+  "course_G_files": 28,
+  "course_O_files": 28,
+  "shared_semester_files": 2,
+  "templates_compared_by_sha256": 58,
+  "checks": [
+    "Native GUI section G generated 30 files including two shared semester files",
+    "Native GUI rerun reported 30 skips and created nothing",
+    "Native GUI section O generated 28 course files and skipped two shared semester files",
+    "Every on-disk file hash matches the corresponding untouched original template",
+    "No unexpected files or directories"
+  ]
+}

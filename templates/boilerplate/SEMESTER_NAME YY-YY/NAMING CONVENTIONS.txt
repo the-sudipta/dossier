@@ -1,0 +1,18 @@
+===== Naming Conventions =====
+
+[1] SEMESTER NAMES MEANING
+----------------------------------
+- FALL 25-26 means Fall 2025
+- SPRING 25-26 means Spring 2026
+- SUMMER 25-26 means Summer 2026
+- FALL 26-27 means Fall 2026 
+
+[2] FILE NAMES
+----------------------------------
+SEMESTER_NAME.COURSE_NAME_[ SECTION ].TERM_NAME_MID_OR_FINAL.FILE_NAME_OR_DETAILS_LIKE_OBE.FILE_EXTENSION
+Example : Fall_25-26.DS_Lab_[ G ].Final_Term.Final_Exam.pdf
+
+[3] COURSE FOLDER NAMES
+----------------------------------
+COURSE NAME [ SECTION ]
+Example : DS Lab [ G ]

@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "method": "Production browser UI connected to actual Rust CLI through a test adapter. Native Tauri IPC/picker NOT tested.",
+  "checks": [
+    "Cancelled picker keeps Generate disabled",
+    "Native CLI generation from form: 22 directories,30 files",
+    "Repeat: 0 created,30 skipped",
+    "Section O:21 directories,28 files,2 shared skips",
+    "Activity log:51 entries",
+    "Backend rejection remains visible after controls re-enable"
+  ],
+  "console_errors": []
+}

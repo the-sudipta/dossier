@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use Dossier in your work, please cite this software."
+title: "Dossier: Offline course documentation workspace generator"
+version: 0.1.0
+type: software
+authors:
+  - family-names: "Das"
+    given-names: "Sudipta Kumar"
+license: MIT
+# DOI intentionally omitted until a release is archived and a real DOI exists.

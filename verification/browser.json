@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "viewports": [
+    [
+      1280,
+      860
+    ],
+    [
+      980,
+      800
+    ],
+    [
+      760,
+      750
+    ],
+    [
+      390,
+      844
+    ]
+  ],
+  "console_errors": [],
+  "external_requests": [],
+  "checks": [
+    "30 template files in live tree",
+    "Exact generated filename",
+    "Invalid filename rejected inline",
+    "Generate disabled without destination",
+    "Tooltips on all interactive controls",
+    "Keyboard tooltip and Escape",
+    "F1 hint mode button",
+    "Guide and About panels",
+    "Browser cannot pretend to generate files",
+    "Responsive layouts without horizontal overflow"
+  ]
+}

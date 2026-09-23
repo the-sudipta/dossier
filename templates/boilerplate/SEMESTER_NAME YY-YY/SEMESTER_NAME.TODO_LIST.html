@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive System Checklist</title>
+    <style>
+        /* === COLOR PALETTE === */
+        :root {
+            --bg-deep: #03050a;
+            --panel-bg: rgba(10, 15, 25, 0.65);
+            --text-main: #f0f6fc;
+            --text-muted: #577399;
+            
+            --neon-blue: #00e5ff;
+            --neon-blue-glow: rgba(0, 229, 255, 0.6);
+            --neon-red: #ff2a5f;
+            --neon-red-glow: rgba(255, 42, 95, 0.6);
+            --neon-green: #00ffaa;
+            
+            --font-stack: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        /* === DYNAMIC BACKGROUND === */
+        body {
+            font-family: var(--font-stack);
+            background-color: var(--bg-deep);
+            min-height: 100vh;
+            margin: 0;
+            padding: 50px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            color: var(--text-main);
+            overflow-x: hidden;
+            
+            /* Mouse follow glow fallback */
+            background-image: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0, 229, 255, 0.08) 0%, transparent 40%);
+        }
+
+        /* Ambient Floating Orbs */
+        .ambient-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+        .orb-1 { width: 40vw; height: 40vw; background: rgba(0, 100, 255, 0.15); top: -10%; left: -10%; animation-duration: 25s; }
+        .orb-2 { width: 50vw; height: 50vw; background: rgba(0, 255, 170, 0.08); bottom: -20%; right: -10%; animation-delay: -5s; }
+        .orb-3 { width: 30vw; height: 30vw; background: rgba(200, 0, 255, 0.1); top: 40%; left: 40%; animation-duration: 30s; }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(5%, 5%) scale(1.1); }
+            100% { transform: translate(-5%, 10%) scale(0.9); }
+        }
+
+        /* === MAIN CONTAINER === */
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            border-radius: 16px;
+            
+            /* The base state is now visible, fixing the blank screen bug */
+            opacity: 1; 
+            transform: translateY(0);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 30px rgba(0, 229, 255, 0.05);
+            padding: 40px;
+            
+            /* 'backwards' fills the 0% state before the animation begins */
+            animation: containerEntrance 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+        }
+
+        @keyframes containerEntrance {
+            0% { opacity: 0; transform: translateY(40px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* === HEADER === */
+        .header { text-align: center; margin-bottom: 45px; }
+
+        h1 {
+            color: #fff;
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin: 0;
+            padding: 10px 30px;
+            display: inline-block;
+            text-shadow: 0 0 15px var(--neon-blue-glow);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            border-radius: 12px;
+            cursor: text;
+        }
+
+        h1:hover, h1:focus {
+            background: rgba(0, 229, 255, 0.1);
+            transform: scale(1.02);
+            text-shadow: 0 0 30px var(--neon-blue);
+        }
+
+        /* === TASK LIST === */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 40px;
+            counter-reset: task-counter; 
+        }
+
+        .task-item {
+            display: flex;
+            align-items: stretch;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
+            border-left: 4px solid var(--neon-blue);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            animation: taskEntrance 0.5s ease-out backwards;
+        }
+
+        @keyframes taskEntrance {
+            0% { opacity: 0; transform: translateY(-15px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .task-item.removing { animation: taskExit 0.4s cubic-bezier(0.4, 0, 1, 1) forwards !important; }
+        @keyframes taskExit { to { opacity: 0; transform: translateX(100px); max-height: 0; padding: 0; margin: 0; border: none; } }
+
+        .task-item:hover {
+            background: rgba(0, 229, 255, 0.05);
+            border-color: rgba(0, 229, 255, 0.2);
+            transform: translateX(6px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .task-item.dragging {
+            opacity: 0.6;
+            transform: scale(1.02);
+            box-shadow: 0 0 40px var(--neon-blue-glow);
+            z-index: 100;
+        }
+
+        .drag-handle {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0 15px;
+            cursor: grab;
+            color: rgba(255,255,255,0.2);
+            font-size: 1.4rem;
+            transition: color 0.3s, background 0.3s;
+        }
+        .drag-handle:hover { color: var(--neon-blue); background: rgba(0,229,255,0.1); }
+        .drag-handle:active { cursor: grabbing; }
+
+        .task-main {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+            padding: 20px 15px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* === CHECKBOXES === */
+        input[type="checkbox"] {
+            appearance: none;
+            width: 26px; height: 26px;
+            border: 2px solid var(--text-muted);
+            border-radius: 6px;
+            margin-right: 20px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(0,0,0,0.6);
+            flex-shrink: 0;
+        }
+
+        input[type="checkbox"]::after {
+            content: '';
+            position: absolute;
+            top: 45%; left: 50%;
+            width: 6px; height: 12px;
+            border: solid white;
+            border-width: 0 3px 3px 0;
+            transform: translate(-50%, -50%) rotate(45deg) scale(0);
+            transition: transform 0.4s cubic-bezier(0.3, 1.5, 0.6, 1);
+            opacity: 0;
+        }
+
+        input[type="checkbox"]:checked::after {
+            transform: translate(-50%, -50%) rotate(45deg) scale(1.2);
+            opacity: 1;
+        }
+
+        .done-checkbox:checked {
+            background: var(--neon-blue);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 20px var(--neon-blue-glow);
+        }
+
+        /* Ripple effect container */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(0);
+            animation: rippleAnim 0.6s linear;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        @keyframes rippleAnim {
+            to { transform: scale(4); opacity: 0; }
+        }
+
+        /* === TEXT & STRIKETHROUGH === */
+        .task-number::before {
+            counter-increment: task-counter;
+            content: counter(task-counter) ". ";
+            font-weight: 800;
+            color: var(--neon-blue);
+            margin-right: 12px;
+            font-family: monospace;
+            font-size: 1.2rem;
+            transition: color 0.4s;
+        }
+
+        .task-text {
+            font-size: 1.15rem;
+            line-height: 1.5;
+            position: relative;
+            transition: color 0.6s ease;
+            display: inline-block;
+        }
+
+        .task-text::after {
+            content: '';
+            position: absolute;
+            left: 0; top: 50%;
+            width: 0%; height: 2px;
+            background: var(--neon-blue);
+            box-shadow: 0 0 8px var(--neon-blue-glow);
+            transition: width 0.6s cubic-bezier(0.8, 0, 0.2, 1);
+        }
+
+        @keyframes textCompletePulse {
+            0% { color: #fff; text-shadow: 0 0 20px var(--neon-blue); }
+            100% { color: var(--text-muted); text-shadow: none; }
+        }
+
+        .done-checkbox:checked ~ .task-text::after { width: 100%; }
+        .done-checkbox:checked ~ .task-text { animation: textCompletePulse 0.6s forwards; }
+        .done-checkbox:checked ~ .task-number::before { color: var(--text-muted); }
+
+        /* === EDIT / DELETE MODE === */
+        .delete-checkbox { border-color: var(--neon-red); display: none; }
+        .delete-checkbox:checked { background: var(--neon-red); border-color: var(--neon-red); box-shadow: 0 0 20px var(--neon-red-glow); }
+
+        body.edit-mode .drag-handle { display: flex; }
+        body.edit-mode .task-item { border-left-color: var(--neon-red); }
+        body.edit-mode .done-checkbox { display: none; }
+        body.edit-mode .delete-checkbox { display: block; }
+        body.edit-mode .task-number::before { color: var(--neon-red); }
+        body.edit-mode .normal-controls { display: none; }
+        body.edit-mode .delete-controls { display: flex; animation: fadeIn 0.4s forwards; }
+
+        /* Updated scanline animation to preserve the black box-shadow behind the panel */
+        @keyframes scanline {
+            0% { box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 10px rgba(255,42,95,0.1); }
+            50% { box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 15px rgba(255,42,95,0.3), inset 0 0 30px rgba(255,42,95,0.3); }
+            100% { box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 10px rgba(255,42,95,0.1); }
+        }
+        body.edit-mode .container {
+            border-color: var(--neon-red);
+            animation: scanline 2s infinite;
+        }
+
+        /* === CONTROLS & BUTTONS === */
+        .controls-container {
+            background: rgba(0,0,0,0.5);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .add-box { display: flex; gap: 15px; margin-bottom: 25px; }
+        
+        .add-box input {
+            flex-grow: 1;
+            padding: 16px 20px;
+            background: rgba(10, 15, 30, 0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: white;
+            font-size: 1.1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .add-box input:focus { border-color: var(--neon-blue); box-shadow: 0 0 20px var(--neon-blue-glow); transform: scale(1.01); }
+
+        .btn {
+            position: relative;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+        
+        .btn:active { transform: scale(0.92); }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transform: skewX(-20deg);
+            transition: left 0.5s ease;
+            z-index: -1;
+        }
+        .btn:hover::before { left: 150%; }
+
+        .btn-blue { background: rgba(0, 229, 255, 0.1); color: var(--neon-blue); border: 1px solid var(--neon-blue); }
+        .btn-blue:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 25px var(--neon-blue-glow); }
+
+        .btn-red { background: rgba(255, 42, 95, 0.1); color: var(--neon-red); border: 1px solid var(--neon-red); }
+        .btn-red:hover { background: var(--neon-red); color: #fff; box-shadow: 0 0 25px var(--neon-red-glow); }
+
+        .btn-green { background: rgba(0, 255, 170, 0.1); color: var(--neon-green); border: 1px solid var(--neon-green); }
+        .btn-green:hover { background: var(--neon-green); color: #000; box-shadow: 0 0 25px rgba(0, 255, 170, 0.6); }
+
+        .actions { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 25px; }
+        .delete-controls { display: none; justify-content: space-between; align-items: center; border-top: 1px dashed var(--neon-red); padding-top: 25px; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        #status-msg { text-align: center; font-weight: 700; margin-top: 20px; height: 24px; font-size: 1.1rem; letter-spacing: 2px; }
+        .status-success { color: var(--neon-green); animation: pulseText 1s infinite alternate; }
+        .status-error { color: var(--neon-red); text-shadow: 0 0 10px var(--neon-red-glow); }
+
+        @keyframes pulseText { from { text-shadow: 0 0 5px rgba(0,255,170,0.2); } to { text-shadow: 0 0 20px rgba(0,255,170,0.8); } }
+    </style>
+</head>
+<body style="--mouse-x: 67.30013106159896%; --mouse-y: 82.07070707070707%;">
+
+    <!-- Animated Background Orbs -->
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
+    <div class="ambient-orb orb-3"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1 id="semester-title" contenteditable="true" spellcheck="false" title="Click to edit">Fall 26-27</h1>
+        </div>
+
+        <div class="task-list" id="task-list">
+            <!-- Initial Checklist -->
+            <div class="task-item" draggable="false">
+                <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                <label class="task-main">
+                    <input type="checkbox" class="done-checkbox">
+                    <input type="checkbox" class="delete-checkbox">
+                    <span class="task-number"></span>
+                    <span class="task-text">Update the Semester name and year of this Check List webpage</span>
+                </label>
+            </div>
+
+            <div class="task-item" draggable="false">
+                <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                <label class="task-main">
+                    <input type="checkbox" class="done-checkbox">
+                    <input type="checkbox" class="delete-checkbox">
+                    <span class="task-number"></span>
+                    <span class="task-text">Create All the sections folders</span>
+                </label>
+            </div>
+
+            <div class="task-item" draggable="false">
+                <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                <label class="task-main">
+                    <input type="checkbox" class="done-checkbox">
+                    <input type="checkbox" class="delete-checkbox">
+                    <span class="task-number"></span>
+                    <span class="task-text">Update the File Names and all, where is needed</span>
+                </label>
+            </div>
+
+            <div class="task-item" draggable="false">
+                <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                <label class="task-main">
+                    <input type="checkbox" class="done-checkbox">
+                    <input type="checkbox" class="delete-checkbox">
+                    <span class="task-number"></span>
+                    <span class="task-text">Collect the Courses Outlines</span>
+                </label>
+            </div>
+            
+            <div class="task-item" draggable="false">
+                <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                <label class="task-main">
+                    <input type="checkbox" class="done-checkbox">
+                    <input type="checkbox" class="delete-checkbox">
+                    <span class="task-number"></span>
+                    <span class="task-text">Change the Marking Criteria from the Portal</span>
+                </label>
+            </div>
+
+            <div class="task-item" draggable="false">
+                <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                <label class="task-main">
+                    <input type="checkbox" class="done-checkbox">
+                    <input type="checkbox" class="delete-checkbox">
+                    <span class="task-number"></span>
+                    <span class="task-text">Download the Student List from the portal's Students blank grade sheet and put them into the excel file</span>
+                </label>
+            </div>
+
+            <div class="task-item" draggable="false">
+                <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                <label class="task-main">
+                    <input type="checkbox" class="done-checkbox">
+                    <input type="checkbox" class="delete-checkbox">
+                    <span class="task-number"></span>
+                    <span class="task-text">Download the CGPA from portal and put them also in the Excel</span>
+                </label>
+            </div>
+
+            <div class="task-item" draggable="false">
+                <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                <label class="task-main">
+                    <input type="checkbox" class="done-checkbox">
+                    <input type="checkbox" class="delete-checkbox">
+                    <span class="task-number"></span>
+                    <span class="task-text">Upload the Previous Semester's OBE (3 Best, 3 Average, 3 Marginal Pass)</span>
+                </label>
+            </div>
+
+            <div class="task-item" draggable="false">
+                <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                <label class="task-main">
+                    <input type="checkbox" class="done-checkbox">
+                    <input type="checkbox" class="delete-checkbox">
+                    <span class="task-number"></span>
+                    <span class="task-text">Make the basic Course File Ready along with collecting one mother and one brown for each of the sections for each of the courses for this semester</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="controls-container">
+            <div class="normal-controls">
+                <div class="add-box">
+                    <input type="text" id="new-task-input" placeholder="Initialize new task parameter...">
+                    <button class="btn btn-blue" onclick="addTask()">[+] Inject Data</button>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-red" onclick="toggleEditMode()">⚠️ System Override</button>
+                    <button class="btn btn-green" onclick="saveFile()">💾 Save System State</button>
+                </div>
+            </div>
+
+            <div class="delete-controls">
+                <button class="btn btn-blue" onclick="toggleEditMode()">Abort Override</button>
+                <span style="color: var(--neon-red); font-weight: 800; letter-spacing: 2px; animation: pulseText 1s infinite alternate;">OVERRIDE ACTIVE</span>
+                <button class="btn btn-red" onclick="confirmDeletion()" style="background: var(--neon-red); color: white; box-shadow: 0 0 20px var(--neon-red-glow);">Confirm Purge</button>
+            </div>
+            
+            <div id="status-msg" class="">ENCODING SYSTEM STATE...</div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. MOUSE FOLLOW AMBIENT GLOW ---
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth) * 100;
+            const y = (e.clientY / window.innerHeight) * 100;
+            document.body.style.setProperty('--mouse-x', `${x}%`);
+            document.body.style.setProperty('--mouse-y', `${y}%`);
+        });
+
+        // --- 2. CLICK RIPPLE EFFECT ON CHECKBOXES (FIXED POSITION) ---
+        document.getElementById('task-list').addEventListener('click', function(e) {
+            if (e.target.type === 'checkbox') {
+                const ripple = document.createElement('div');
+                ripple.className = 'ripple';
+                ripple.style.width = '40px';
+                ripple.style.height = '40px';
+                
+                // FIXED: Use e.pageX and e.pageY to perfectly track mouse clicks even when scrolled
+                ripple.style.left = (e.pageX - 20) + 'px';
+                ripple.style.top = (e.pageY - 20) + 'px';
+                
+                document.body.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600); 
+            }
+        });
+
+        // --- 3. DRAG AND DROP (ONLY IN EDIT MODE) ---
+        const taskList = document.getElementById('task-list');
+
+        taskList.addEventListener('dragstart', (e) => {
+            if(!document.body.classList.contains('edit-mode')) { e.preventDefault(); return; }
+            const item = e.target.closest('.task-item');
+            if (item) setTimeout(() => item.classList.add('dragging'), 0);
+        });
+
+        taskList.addEventListener('dragend', (e) => {
+            const item = e.target.closest('.task-item');
+            if (item) item.classList.remove('dragging');
+        });
+
+        taskList.addEventListener('dragover', (e) => {
+            if(!document.body.classList.contains('edit-mode')) return;
+            e.preventDefault();
+            const draggingItem = document.querySelector('.dragging');
+            if (!draggingItem) return;
+
+            const afterElement = getDragAfterElement(taskList, e.clientY);
+            if (afterElement == null) taskList.appendChild(draggingItem);
+            else taskList.insertBefore(draggingItem, afterElement);
+        });
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.task-item:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+                else return closest;
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        // --- 4. ADD TASK ANIMATION ---
+        function addTask() {
+            const input = document.getElementById('new-task-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const newItem = document.createElement('div');
+            newItem.className = 'task-item';
+            const isEditMode = document.body.classList.contains('edit-mode');
+            newItem.setAttribute('draggable', isEditMode ? 'true' : 'false');
+            
+            newItem.innerHTML = `
+                <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                <label class="task-main">
+                    <input type="checkbox" class="done-checkbox">
+                    <input type="checkbox" class="delete-checkbox">
+                    <span class="task-number"></span>
+                    <span class="task-text">${text}</span>
+                </label>
+            `;
+            
+            taskList.appendChild(newItem);
+            input.value = ''; 
+        }
+
+        document.getElementById('new-task-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addTask();
+        });
+
+        // --- 5. EDIT MODE & DELETE ANIMATION ---
+        function toggleEditMode() {
+            const isEdit = document.body.classList.toggle('edit-mode');
+            document.querySelectorAll('.task-item').forEach(item => {
+                item.setAttribute('draggable', isEdit ? 'true' : 'false');
+            });
+            if (!isEdit) document.querySelectorAll('.delete-checkbox').forEach(cb => cb.checked = false);
+        }
+
+        function confirmDeletion() {
+            const targets = document.querySelectorAll('.delete-checkbox:checked');
+            if (targets.length === 0) { toggleEditMode(); return; }
+            
+            let delay = 0;
+            targets.forEach((cb) => {
+                const item = cb.closest('.task-item');
+                setTimeout(() => item.classList.add('removing'), delay);
+                setTimeout(() => item.remove(), delay + 400); 
+                delay += 100;
+            });
+            
+            setTimeout(() => toggleEditMode(), delay + 100); 
+        }
+
+        // --- 6. INTELLIGENT FILE SAVING ---
+        let fileHandle;
+
+        async function saveFile() {
+            document.body.classList.remove('edit-mode');
+            document.querySelectorAll('.task-item').forEach(i => {
+                i.setAttribute('draggable', 'false');
+                i.classList.remove('removing', 'dragging'); 
+            });
+            
+            const statusDiv = document.getElementById('status-msg');
+            statusDiv.textContent = "ENCODING SYSTEM STATE...";
+            statusDiv.className = "";
+
+            document.querySelectorAll('.done-checkbox').forEach(cb => {
+                if (cb.checked) cb.setAttribute('checked', 'checked');
+                else cb.removeAttribute('checked');
+            });
+
+            document.querySelectorAll('.delete-checkbox').forEach(cb => {
+                cb.checked = false;
+                cb.removeAttribute('checked');
+            });
+
+            const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+            const currentPath = window.location.pathname;
+            const currentFilename = decodeURIComponent(currentPath.split('/').pop()) || 'checklist.html';
+
+            try {
+                if ('showSaveFilePicker' in window) {
+                    if (!fileHandle) {
+                        fileHandle = await window.showSaveFilePicker({
+                            suggestedName: currentFilename,
+                            types: [{ description: 'HTML File', accept: { 'text/html': ['.html'] } }],
+                        });
+                    }
+                    
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(htmlContent);
+                    await writable.close();
+                    
+                    statusDiv.textContent = "STATE SAVED SECURELY";
+                    statusDiv.className = "status-success";
+                    setTimeout(() => statusDiv.textContent = "", 3000);
+                    return;
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    statusDiv.textContent = "SAVE ABORTED";
+                    statusDiv.className = "status-error";
+                    setTimeout(() => statusDiv.textContent = "", 3000);
+                    return; 
+                }
+            }
+
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = currentFilename; 
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            statusDiv.textContent = "DOWNLOAD COMPLETE";
+            statusDiv.className = "status-success";
+            setTimeout(() => statusDiv.textContent = "", 3000);
+        }
+    </script>
+
+</body></html>

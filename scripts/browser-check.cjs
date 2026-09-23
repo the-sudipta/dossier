@@ -1,0 +1,40 @@
+// Run with Playwright available in NODE_PATH. Tests the real static frontend;
+// the native bridge is tested separately in the compiled desktop application.
+const {chromium}=require('playwright');
+const fs=require('node:fs');
+const assert=require('node:assert/strict');
+(async()=>{
+ const browser=await chromium.launch({headless:true,channel:'msedge'});
+ const page=await browser.newPage({viewport:{width:1280,height:860},reducedMotion:'reduce'});
+ const errors=[],external=[];page.on('pageerror',e=>errors.push(String(e)));page.on('request',r=>{if(!r.url().startsWith('http://127.0.0.1:8765')&&!r.url().startsWith('data:'))external.push(r.url());});
+ await page.goto('http://127.0.0.1:8765/app/');
+ await page.locator('.tree .root').waitFor();
+ assert.equal(await page.locator('#generate').isDisabled(),true);
+ for(const [id,value] of [['semester','Fall 25-26'],['course','DS Lab'],['section','G']])await page.locator('#'+id).fill(value);
+ await page.locator('#section').blur();
+ assert.equal(await page.locator('.tree .file').count(),30);
+ await page.locator('#expand-all').click();
+ assert(await page.locator('#tree').innerText().then(t=>t.includes('Fall_25-26.DS_Lab_[ G ].OVERALL.MARKSHEET.xlsx')));
+ await page.locator('#expand-all').click();
+ await page.locator('#course').fill('../invalid');await page.locator('#course').blur();
+ assert.equal(await page.locator('#course').getAttribute('aria-invalid'),'true');
+ assert.equal(await page.locator('#generate').isDisabled(),true);
+ await page.locator('#course').fill('DS Lab');await page.locator('#course').blur();
+ await page.locator('#semester').focus();assert.equal(await page.locator('#tooltip').isVisible(),true);
+ await page.keyboard.press('Escape');assert.equal(await page.locator('#tooltip').isVisible(),false);
+ await page.locator('#hint-button').click();assert.equal(await page.locator('#hint-button').getAttribute('aria-pressed'),'true');await page.locator('#hint-button').click();
+ await page.locator('#guide-button').click();assert.equal(await page.locator('#info-dialog').isVisible(),true);await page.keyboard.press('Escape');
+ await page.locator('#about-button').click();assert((await page.locator('#dialog-content').innerText()).includes('MIT'));await page.locator('#close-dialog').click();
+ await page.locator('#choose-folder').click();assert((await page.locator('#form-message').innerText()).includes('browser preview'));
+ const missing=await page.locator('button,input,a,summary').evaluateAll(nodes=>nodes.filter(n=>!n.closest('[data-hint]')).map(n=>n.id||n.textContent));assert.deepEqual(missing,[]);
+ await page.locator('#course').fill('DS Lab');await page.locator('#course').blur();await page.mouse.move(0,0);await page.keyboard.press('Escape');
+ fs.mkdirSync('verification/browser',{recursive:true});
+ const sizes=[[1280,860],[980,800],[760,750],[390,844]];
+ for(const [width,height]of sizes){await page.setViewportSize({width,height});await page.screenshot({path:`verification/browser/app-${width}.png`,fullPage:true});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`horizontal overflow ${width}`);}
+ await page.locator('#semester').fill('__proto__');await page.locator('#semester').blur();
+ assert((await page.locator('.tree .root>summary').innerText()).includes('__proto__'));
+ assert.equal(await page.locator('.tree .file').count(),30);
+ assert.deepEqual(errors,[]);assert.deepEqual(external,[]);
+ fs.writeFileSync('verification/browser.json',JSON.stringify({status:'PASS',viewports:sizes,console_errors:errors,external_requests:external,checks:['30 template files in live tree','Exact generated filename','Invalid filename rejected inline','Generate disabled without destination','Tooltips on all interactive controls','Keyboard tooltip and Escape','F1 hint mode button','Guide and About panels','Browser cannot pretend to generate files','Responsive layouts without horizontal overflow']},null,2));
+ await browser.close();console.log('Browser checks passed.');
+})().catch(e=>{console.error(e);process.exit(1)});

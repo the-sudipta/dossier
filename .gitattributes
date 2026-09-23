@@ -1,0 +1,9 @@
+* text=auto
+templates/boilerplate/** -text
+templates/boilerplate/** whitespace=-trailing-space
+*.zip binary
+*.png binary
+*.ico binary
+*.icns binary
+*.docx binary
+*.xlsx binary

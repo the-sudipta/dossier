@@ -1,0 +1,16 @@
+   Compiling webview2-com v0.38.2
+   Compiling tauri v2.11.6
+   Compiling serialize-to-javascript-impl v0.1.2
+   Compiling tauri-plugin-fs v2.5.2
+   Compiling serialize-to-javascript v0.1.2
+   Compiling tauri-plugin-dialog v2.7.3
+   Compiling wry v0.55.1
+   Compiling tauri-runtime v2.11.3
+error: failed to run custom build command for `tauri-plugin-dialog v2.7.3`
+
+Caused by:
+  could not execute process `E:\SUDIPTA\PERSONAL\dossier\target\release\build\tauri-plugin-dialog-0a35389e3502a5fc\build-script-build` (never executed)
+
+Caused by:
+  An Application Control policy has blocked this file. (os error 4551)
+warning: build failed, waiting for other jobs to finish...
