@@ -40,7 +40,10 @@ def main():
     assert originals=={p.relative_to(sources).as_posix():sha(p.read_bytes()) for p in sources.rglob('*') if p.is_file()},'Extracted templates differ from ZIP'
     hashes={}
     with tempfile.TemporaryDirectory(prefix='dossier-acceptance-') as temp:
-        out=Path(temp);first=run(out)
+        # macOS exposes /tmp through /var, which is a system symlink. Resolve
+        # the test directory itself so the app's intentional symlink refusal
+        # tests the output tree, not the host's temporary-directory alias.
+        out=Path(temp).resolve();first=run(out)
         actual_files={p.relative_to(out).as_posix() for p in out.rglob('*') if p.is_file()}
         actual_dirs={p.relative_to(out).as_posix() for p in out.rglob('*') if p.is_dir()}
         assert actual_files==expected_files, (actual_files^expected_files)

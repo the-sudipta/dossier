@@ -284,6 +284,30 @@ pub fn cli(args: Vec<String>) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct TestTempDir {
+        _tempdir: tempfile::TempDir,
+        path: PathBuf,
+    }
+
+    impl TestTempDir {
+        fn path(&self) -> &Path {
+            &self.path
+        }
+    }
+
+    fn test_tempdir() -> TestTempDir {
+        let tempdir = tempfile::tempdir().unwrap();
+        #[cfg(target_os = "macos")]
+        let path = tempdir.path().canonicalize().unwrap();
+        #[cfg(not(target_os = "macos"))]
+        let path = tempdir.path().to_path_buf();
+        TestTempDir {
+            _tempdir: tempdir,
+            path,
+        }
+    }
+
     fn inputs() -> Inputs {
         Inputs {
             semester: "Fall 25-26".into(),
@@ -309,7 +333,7 @@ mod tests {
     }
     #[test]
     fn real_assets_repeat_and_second_section() {
-        let root = tempfile::tempdir().unwrap();
+        let root = test_tempdir();
         let first = generate(&inputs(), root.path());
         assert!(first.error.is_none(), "{:?}", first.error);
         assert_eq!(first.files_created, 30);
@@ -336,7 +360,7 @@ mod tests {
     }
     #[test]
     fn preserves_edited_files() {
-        let root = tempfile::tempdir().unwrap();
+        let root = test_tempdir();
         generate(&inputs(), root.path());
         let file = root.path().join("Fall 25-26/NAMING CONVENTIONS.txt");
         fs::write(&file, b"user changes").unwrap();
@@ -345,7 +369,7 @@ mod tests {
     }
     #[test]
     fn invalid_input_writes_nothing() {
-        let root = tempfile::tempdir().unwrap();
+        let root = test_tempdir();
         let mut i = inputs();
         i.course = "../escape".into();
         assert!(generate(&i, root.path()).error.is_some());
@@ -353,7 +377,7 @@ mod tests {
     }
     #[test]
     fn reports_partial_work_and_conflicts() {
-        let root = tempfile::tempdir().unwrap();
+        let root = test_tempdir();
         let semester = root.path().join("Fall 25-26");
         fs::create_dir(&semester).unwrap();
         fs::write(semester.join("NAMING CONVENTIONS.txt"), b"keep").unwrap();
@@ -369,7 +393,7 @@ mod tests {
     }
     #[test]
     fn concurrent_runs_do_not_overwrite() {
-        let root = tempfile::tempdir().unwrap();
+        let root = test_tempdir();
         let path = root.path().to_owned();
         let p2 = path.clone();
         let a = std::thread::spawn(move || generate(&inputs(), &path));
@@ -382,7 +406,7 @@ mod tests {
     }
     #[test]
     fn write_failure_retains_partial_file_and_reports_previous_success() {
-        let root = tempfile::tempdir().unwrap();
+        let root = test_tempdir();
         let mut attempts = 0;
         let result = generate_with_writer(&inputs(), root.path(), |file, bytes| {
             attempts += 1;
@@ -426,8 +450,8 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn rejects_symlink_escape() {
-        let root = tempfile::tempdir().unwrap();
-        let outside = tempfile::tempdir().unwrap();
+        let root = test_tempdir();
+        let outside = test_tempdir();
         std::os::unix::fs::symlink(outside.path(), root.path().join("Fall 25-26")).unwrap();
         assert!(generate(&inputs(), root.path()).error.is_some());
         assert_eq!(fs::read_dir(outside.path()).unwrap().count(), 0);
