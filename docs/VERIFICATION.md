@@ -65,7 +65,7 @@ builds the full workspace, and packages both Windows executables.
 | Native GUI section O | 21 folders, 28 files, 2 shared semester files skipped | Native app result panel; exact output tree checked below |
 | Native output contents | 58 files and 43 directories across both sections; file hashes match original assets in each section | `verification/native-desktop.json` |
 | Final Windows package | Dossier desktop 9,800,704 bytes; CLI generator 1,138,688 bytes | `verification/windows-package.log` |
-| GUI command-line flags | `Dossier.exe --help` attaches to the invoking terminal and returns help | `verification/native-cli.json` |
+| GUI command-line flags | `Dossier.exe --help` attaches to the invoking terminal and returns help | `verification/dossier-gui-help.txt` |
 
 The UI integration test uses an explicit test adapter between the production
 frontend and the actual Rust CLI. The folder selection is simulated there;

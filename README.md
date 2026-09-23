@@ -16,7 +16,7 @@ Build a complete course-section documentation workspace in seconds. Enter a seme
 | Branding | Original transparent PNG, multi-resolution ICO, ICNS |
 | Platforms | Windows x64, Linux x64, macOS Intel and Apple Silicon build matrix |
 | Current verification | See `verification/` and `docs/VERIFICATION.md` for actual local results |
-| Release status | Windows desktop and CLI are built. Linux/macOS packages are prepared for CI. Publishing this branch does not create a versioned release or deploy Pages. |
+| Release assets | Each versioned release includes GUI packages and independent standalone CLI packages for Windows x64, Linux x64, macOS Intel, and Apple Silicon, plus SHA-256 checksums. |
 
 ## Why this exists
 
@@ -49,13 +49,13 @@ For source builds: Rust 1.98.1 (pinned in `rust-toolchain.toml`) and the [Tauri 
 
 ## How to use
 
-**Windows:** Double-click `dist/Dossier.exe`. `dist/dossier-cli.exe` is the console version. The published release asset will be `dossier-windows-x64.exe` after a version tag is created and the release workflow completes.
+**Windows:** Double-click `dist/Dossier.exe`. `dist/dossier-cli.exe` is the standalone console version. Versioned releases include `dossier-windows-x64.exe` and `dossier-cli-windows-x64.exe`.
 
 ```powershell
 .\Dossier.exe
 ```
 
-**Linux:** Extract the `.tar.gz` release, then run the binary on a system with the listed GTK/WebKit dependencies.
+**Linux GUI:** Extract the `.tar.gz` release, then run the binary on a system with the listed GTK/WebKit dependencies. The separate `dossier-cli-linux-x64.tar.gz` standalone package has no GUI or webview dependency.
 
 ```sh
 tar -xzf dossier-linux-x64.tar.gz
@@ -63,7 +63,7 @@ chmod +x dossier
 ./dossier
 ```
 
-**macOS:** Choose Intel or Apple Silicon, extract the `.app.zip`, and open `Dossier.app`. The prepared CI packages are ad-hoc signed, not Apple-notarized; normal macOS first-run verification applies.
+**macOS GUI:** Choose Intel or Apple Silicon, extract the `.app.zip`, and open `Dossier.app`. Separate `dossier-cli-macos-intel.tar.gz` and `dossier-cli-macos-apple-silicon.tar.gz` packages contain the standalone CLI. The GUI packages are ad-hoc signed, not Apple-notarized; normal macOS first-run verification applies.
 
 ```sh
 unzip dossier-macos-apple-silicon.app.zip
@@ -119,7 +119,7 @@ Run `cargo run -p dossier` for the desktop app, or `scripts/dev.ps1` on this Win
 
 ## Release and showcase
 
-The prepared workflow tests and builds all four targets on a pushed `v*.*.*` tag, then attaches the platform packages to a GitHub Release. Manual workflow runs build artifacts without publishing. Update the repository slug in `scripts/build_showcase.py` if the future repository is not `the-sudipta/dossier`, then regenerate `index.html`. No release links are claimed to be live before the first release.
+The workflow tests and builds all four targets on a pushed `v*.*.*` tag, then attaches GUI and standalone CLI packages plus `SHA256SUMS.txt` to a GitHub Release. Manual workflow runs build artifacts without publishing. Update the repository slug in `scripts/build_showcase.py` if the future repository is not `the-sudipta/dossier`, then regenerate `index.html`.
 
 ## License and citation
 

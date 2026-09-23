@@ -13,16 +13,20 @@ jobs:
         include:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            asset: dossier-windows-x64.exe
+            app_asset: dossier-windows-x64.exe
+            cli_asset: dossier-cli-windows-x64.exe
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-            asset: dossier-linux-x64.tar.gz
+            app_asset: dossier-linux-x64.tar.gz
+            cli_asset: dossier-cli-linux-x64.tar.gz
           - os: macos-15-intel
             target: x86_64-apple-darwin
-            asset: dossier-macos-intel.app.zip
+            app_asset: dossier-macos-intel.app.zip
+            cli_asset: dossier-cli-macos-intel.tar.gz
           - os: macos-15
             target: aarch64-apple-darwin
-            asset: dossier-macos-apple-silicon.app.zip
+            app_asset: dossier-macos-apple-silicon.app.zip
+            cli_asset: dossier-cli-macos-apple-silicon.tar.gz
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +37,7 @@ jobs:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
       - if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential libxdo-dev libssl-dev librsvg2-dev libayatana-appindicator3-dev
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev build-essential libxdo-dev libssl-dev librsvg2-dev libayatana-appindicator3-dev
       - run: cargo fmt --all -- --check
       - run: cargo test --locked -p dossier-core --target ${{ matrix.target }}
       - run: cargo build --locked --release --workspace --target ${{ matrix.target }}
@@ -51,7 +55,8 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist
-          Copy-Item 'target/${{ matrix.target }}/release/dossier.exe' 'dist/${{ matrix.asset }}'
+          Copy-Item 'target/${{ matrix.target }}/release/dossier.exe' 'dist/${{ matrix.app_asset }}'
+          Copy-Item 'target/${{ matrix.target }}/release/dossier-cli.exe' 'dist/${{ matrix.cli_asset }}'
       - name: Package Linux
         if: runner.os == 'Linux'
         run: |
@@ -59,7 +64,12 @@ jobs:
           cp target/${{ matrix.target }}/release/dossier dist/package/dossier
           cp src-tauri/icons/icon.png dist/package/dossier.png
           cp LICENSE README.md dist/package/
-          tar -czf dist/${{ matrix.asset }} -C dist/package .
+          tar -czf dist/${{ matrix.app_asset }} -C dist/package .
+          mkdir -p dist/cli-package
+          cp target/${{ matrix.target }}/release/dossier-cli dist/cli-package/dossier-cli
+          cp packaging/standalone-README.txt dist/cli-package/README.txt
+          chmod +x dist/cli-package/dossier-cli
+          tar -czf dist/${{ matrix.cli_asset }} -C dist/cli-package .
       - name: Package macOS
         if: runner.os == 'macOS'
         run: |
@@ -68,11 +78,16 @@ jobs:
           cp src-tauri/icons/icon.icns dist/Dossier.app/Contents/Resources/icon.icns
           cp packaging/Info.plist dist/Dossier.app/Contents/Info.plist
           codesign --force --deep --sign - dist/Dossier.app
-          ditto -c -k --sequesterRsrc --keepParent dist/Dossier.app dist/${{ matrix.asset }}
+          ditto -c -k --sequesterRsrc --keepParent dist/Dossier.app dist/${{ matrix.app_asset }}
+          mkdir -p dist/cli-package
+          cp target/${{ matrix.target }}/release/dossier-cli dist/cli-package/dossier-cli
+          cp packaging/standalone-README.txt dist/cli-package/README.txt
+          chmod +x dist/cli-package/dossier-cli
+          tar -czf dist/${{ matrix.cli_asset }} -C dist/cli-package .
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}
-          path: dist/${{ matrix.asset }}
+          path: dist/*
           if-no-files-found: error
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -85,6 +100,8 @@ jobs:
         with:
           path: release-assets
           merge-multiple: true
+      - name: Create SHA-256 checksums
+        run: cd release-assets && sha256sum dossier-* > SHA256SUMS.txt
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
